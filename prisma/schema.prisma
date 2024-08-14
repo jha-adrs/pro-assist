@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  phone         String         @unique
+  email         String?        @unique
+  password      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscriptions Subscription[]
+  schedules     Schedule[]
+  washHistories WashHistory[]
+  sessions      Session[]
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       Int
+  expiresAt    DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Car {
+  id                Int            @id @default(autoincrement())
+  size              CarSize
+  subscriptionPrice Int
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  Subscription      Subscription[]
+}
+
+model Subscription {
+  id                Int        @id @default(autoincrement())
+  userId            Int
+  carId             Int
+  startDate         DateTime
+  endDate           DateTime?
+  insurance         Boolean
+  insurancePolicy   String? // insurance policy or policy number
+  insuranceDocument String? // insurance policy PDF or image
+  insuranceValidity DateTime? // insurance validity date
+  plateNumber       String // car number plate
+  frequency         Frequency
+  washType          WashType
+  discount          Boolean?
+  discountPercent   Int?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  user              User       @relation(fields: [userId], references: [id])
+  car               Car        @relation(fields: [carId], references: [id])
+  schedules         Schedule[]
+}
+
+// TODO
+model Schedule {
+  id             Int           @id @default(autoincrement())
+  subscriptionId Int
+  dayOfWeek      String
+  timeOfDay      String
+  isAutomatic    Boolean
+  subscription   Subscription  @relation(fields: [subscriptionId], references: [id])
+  washHistories  WashHistory[]
+  User           User?         @relation(fields: [userId], references: [id])
+  userId         Int?
+}
+
+model WashHistory {
+  id         Int      @id @default(autoincrement())
+  scheduleId Int
+  employeeId Int
+  washDate   DateTime
+  schedule   Schedule @relation(fields: [scheduleId], references: [id])
+  employee   Employee @relation(fields: [employeeId], references: [id])
+  User       User?    @relation(fields: [userId], references: [id])
+  userId     Int?
+}
+
+model Employee {
+  id            Int           @id @default(autoincrement())
+  name          String
+  phone         String
+  email         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  washHistories WashHistory[]
+}
+
+enum CarSize {
+  HATCHBACK
+  SEDAN
+  SUV
+  TRUCK
+}
+
+enum Frequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+}
+
+enum WashType {
+  NORMAL
+  PREMIUM
+}
